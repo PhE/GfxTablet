@@ -108,6 +108,8 @@ int main(void)
 	printf("GfxTablet driver (protocol version %u) is ready and listening on 0.0.0.0:%u (UDP)\n"
 		"Hint: Make sure that this port is not blocked by your firewall.\n", PROTOCOL_VERSION, GFXTABLET_PORT);
 
+  printf("hack to set a pressure theresold\n");
+
 	signal(SIGINT, quit);
 	signal(SIGTERM, quit);
 
@@ -128,11 +130,20 @@ int main(void)
 		ev_pkt.x = ntohs(ev_pkt.x);
 		ev_pkt.y = ntohs(ev_pkt.y);
 		ev_pkt.pressure = ntohs(ev_pkt.pressure);
-		printf("x: %hi, y: %hi, pressure: %hi\n", ev_pkt.x, ev_pkt.y, ev_pkt.pressure);
 
-		send_event(device, EV_ABS, ABS_X, ev_pkt.x);
-		send_event(device, EV_ABS, ABS_Y, ev_pkt.y);
-		send_event(device, EV_ABS, ABS_PRESSURE, ev_pkt.pressure);
+		if (ev_pkt.pressure > 12000) {
+			printf("x: %hi, y: %hi, pressure: %hi\n", ev_pkt.x, ev_pkt.y, ev_pkt.pressure);
+			send_event(device, EV_ABS, ABS_X, ev_pkt.x);
+			send_event(device, EV_ABS, ABS_Y, ev_pkt.y);
+			send_event(device, EV_ABS, ABS_PRESSURE, ev_pkt.pressure);
+		} else {
+			printf("x: %hi, y: %hi move only\n", ev_pkt.x, ev_pkt.y);
+			send_event(device, EV_ABS, ABS_X, ev_pkt.x);
+			send_event(device, EV_ABS, ABS_Y, ev_pkt.y);
+			send_event(device, EV_ABS, ABS_PRESSURE, 20);
+		}
+
+		printf("ev_pkt.type: %hi %hi %hi\n", ev_pkt.type, EVENT_TYPE_MOTION, EVENT_TYPE_BUTTON);
 
 		switch (ev_pkt.type) {
 			case EVENT_TYPE_MOTION:
