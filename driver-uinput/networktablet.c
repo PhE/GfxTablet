@@ -96,6 +96,9 @@ void quit(int signal) {
 
 int main(void)
 {
+	int pen_down = 0;
+	short theresold = 12000;
+	int nb_low = 0;
 	int device;
 	struct event_packet ev_pkt;
 
@@ -131,31 +134,51 @@ int main(void)
 		ev_pkt.y = ntohs(ev_pkt.y);
 		ev_pkt.pressure = ntohs(ev_pkt.pressure);
 
-		if (ev_pkt.pressure > 12000) {
-			printf("x: %hi, y: %hi, pressure: %hi\n", ev_pkt.x, ev_pkt.y, ev_pkt.pressure);
-			send_event(device, EV_ABS, ABS_X, ev_pkt.x);
-			send_event(device, EV_ABS, ABS_Y, ev_pkt.y);
-			send_event(device, EV_ABS, ABS_PRESSURE, ev_pkt.pressure);
+		printf("x: %hi, y: %hi, pressure: %hi\n", ev_pkt.x, ev_pkt.y, ev_pkt.pressure);
+		send_event(device, EV_ABS, ABS_X, ev_pkt.x);
+		send_event(device, EV_ABS, ABS_Y, ev_pkt.y);
+		send_event(device, EV_ABS, ABS_PRESSURE, ev_pkt.pressure);
+
+		if (ev_pkt.pressure > theresold) {
+			if (pen_down == 0) {
+				pen_down = 1;
+				nb_low = 0;
+				printf("pen_down: %hi\n", pen_down);
+				send_event(device, EV_KEY, BTN_TOUCH, pen_down);
+			}
 		} else {
-			printf("x: %hi, y: %hi move only\n", ev_pkt.x, ev_pkt.y);
-			send_event(device, EV_ABS, ABS_X, ev_pkt.x);
-			send_event(device, EV_ABS, ABS_Y, ev_pkt.y);
-			send_event(device, EV_ABS, ABS_PRESSURE, 20);
+			if (pen_down == 1) {
+				nb_low++;
+				if (nb_low > 3) {
+					nb_low = 0;
+					pen_down = 0;
+					printf("pen_down: %hi\n", pen_down);
+					send_event(device, EV_KEY, BTN_TOUCH, pen_down);
+				}
+			}
 		}
 
-		printf("ev_pkt.type: %hi %hi %hi\n", ev_pkt.type, EVENT_TYPE_MOTION, EVENT_TYPE_BUTTON);
+		//printf("ev_pkt.type: %hi %hi %hi\n", ev_pkt.type, EVENT_TYPE_MOTION, EVENT_TYPE_BUTTON);
+
+
 
 		switch (ev_pkt.type) {
 			case EVENT_TYPE_MOTION:
-				send_event(device, EV_SYN, SYN_REPORT, 1);
+				//send_event(device, EV_SYN, SYN_REPORT, 1);
 				break;
 			case EVENT_TYPE_BUTTON:
 				if (ev_pkt.button == 0)
-					send_event(device, EV_KEY, BTN_TOUCH, ev_pkt.down);
-				send_event(device, EV_SYN, SYN_REPORT, 1);
+					if (ev_pkt.down == 0) {
+						pen_down = 0;
+						printf("pen_down: %hi\n", pen_down);
+						send_event(device, EV_KEY, BTN_TOUCH, pen_down);
+					}
+				//send_event(device, EV_SYN, SYN_REPORT, 1);
 				break;
 
 		}
+
+		send_event(device, EV_SYN, SYN_REPORT, 1);
 	}
 	close(udp_socket);
 

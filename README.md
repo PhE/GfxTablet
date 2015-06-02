@@ -6,6 +6,19 @@ To be informed about updates:
 * [subscribe to email notifications](http://feedburner.google.com/fb/a/mailverify?uri=GfxTablet)
 
 
+What is this GfxTablet fork ?
+===================================
+
+I have a Nexus 10 Android tablet.
+This tablet handled touch pressure but not hovering.
+
+Drawing with Gimp or Inkscape without hovering is not very fun as you
+can't see where your pointer is without actually drawing.
+
+So to emulate hovering we use a pressure theresold.
+Under this theresold, we consider the pressure touch as a hovering move.
+
+
 What is GfxTablet?
 ==================
 
